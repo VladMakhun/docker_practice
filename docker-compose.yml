@@ -54,3 +54,5 @@ volumes:
 networks:
   nestnet:
     driver: bridge
+
+    # added postgres and redis
