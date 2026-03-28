@@ -63,3 +63,4 @@ PONG
 [Nest] 1  - InstanceLoader TypeOrmModule dependencies initialized
 [Nest] 1  - Nest application successfully started
 ```
+NestJS app with PostgreSQL and Redis
