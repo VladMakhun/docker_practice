@@ -54,6 +54,7 @@ PONG
 ```text
 {"message":"Hello World!"}
 ```
+![alt text](image.png)
 
 ## Логи NestJS (фрагмент)
 
