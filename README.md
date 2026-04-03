@@ -1,67 +1,102 @@
 ## Student
+- Name: Vlad Makhun
+- Group: <232.1>
 
-* Name: Махун Владислав
-* Group: 232.1
+## Практичне заняття №3 — CRUD REST API для MiniShop
 
-## Практичне заняття №2 — NestJS + PostgreSQL + Redis
+---
+
+## Опис проекту
+Це REST API для міні-магазину, розроблений з використанням **NestJS**, **PostgreSQL** та **Redis**.
+
+Реалізовано:
+- CRUD для категорій (Categories)
+- CRUD для продуктів (Products)
+- Зв'язок між продуктами та категоріями (ManyToOne)
+- Кешування через Redis
+- Docker-оточення
+
+---
 
 ## Структура репозиторію
 
-```
-.
-├── backend/           # NestJS source code
+├── src/
+│ ├── categories/
+│ │ ├── category.entity.ts
+│ │ ├── categories.module.ts
+│ │ ├── categories.service.ts
+│ │ └── categories.controller.ts
+│ ├── products/
+│ │ ├── product.entity.ts
+│ │ ├── products.module.ts
+│ │ ├── products.service.ts
+│ │ └── products.controller.ts
+│ ├── migrations/
+│ │ ├── 1700000001-CreateTables.ts
+│ │ └── 1775204479172-AddIsActiveToProducts.ts
+│ ├── data-source.ts
+│ └── app.module.ts
 ├── Dockerfile
 ├── docker-compose.yml
-├── .env
 └── README.md
-```
+
+
+---
 
 ## Запуск проекту
 
 ```bash
+cp .env.example .env
 docker compose up --build
-```
 
-## Перевірка сервісів
+Після запуску:
 
+API доступний на: http://localhost:3000
+Categories: http://localhost:3000/api/categories
+Products: http://localhost:3000/api/products
+
+API Endpoints
+Categories
+| Method | URL                 | Опис               |
+| ------ | ------------------- | ------------------ |
+| GET    | /api/categories     | Список категорій   |
+| GET    | /api/categories/:id | Одна категорія     |
+| POST   | /api/categories     | Створити категорію |
+| PATCH  | /api/categories/:id | Оновити категорію  |
+| DELETE | /api/categories/:id | Видалити категорію |
+
+Products
+| Method | URL               | Опис             |
+| ------ | ----------------- | ---------------- |
+| GET    | /api/products     | Список продуктів |
+| GET    | /api/products/:id | Один продукт     |
+| POST   | /api/products     | Створити продукт |
+| PATCH  | /api/products/:id | Оновити продукт  |
+| DELETE | /api/products/:id | Видалити продукт |
+
+
+### Перевірка міграцій
 ```text
-NAME                IMAGE                    STATUS
-docker_practice-app-1        node:20-alpine         running
-docker_practice-postgres-1   postgres:16-alpine     running (healthy)
-docker_practice-redis-1      redis:7-alpine         running (healthy)
+<вивід docker compose exec postgres psql -U nestuser -d nestdb -c "\dt">
 ```
-
-## Перевірка PostgreSQL
-
+ 
+### Тест створення категорії
 ```text
-                                         List of databases
-   Name    |  Owner   | Encoding | Collate |  Ctype
------------+----------+----------+---------+---------
- nestdb    | nestuser | UTF8     | C.UTF-8 | C.UTF-8
- postgres  | postgres | UTF8     | C.UTF-8 | C.UTF-8
- template0 | postgres | UTF8     | C.UTF-8 | C.UTF-8
- template1 | postgres | UTF8     | C.UTF-8 | C.UTF-8
-```
-
-## Перевірка Redis
-
+curl -X POST http://localhost:3000/api/categories \
+-H "Content-Type: application/json" \
+-d '{"name":"Electronics","description":"Gadgets and devices"}'```
+ 
+### Тест створення продукту
 ```text
-PONG
-```
-
-## Перевірка застосунку
-
+curl -X POST http://localhost:3000/api/products \
+-H "Content-Type: application/json" \
+-d '{"name":"iPhone 15","price":999.99,"stock":50,"categoryId":1}'```
+ 
+### Тест отримання продуктів
 ```text
-{"message":"Hello World!"}
-```
-![alt text](image.png)
-
-## Логи NestJS (фрагмент)
-
+curl http://localhost:3000/api/products```
+ 
+### Тест 404
 ```text
-[Nest] 1  - Starting Nest application...
-[Nest] 1  - InstanceLoader AppModule dependencies initialized
-[Nest] 1  - InstanceLoader TypeOrmModule dependencies initialized
-[Nest] 1  - Nest application successfully started
-```
-NestJS app with PostgreSQL and Redis
+curl http://localhost:3000/api/products/999```
+
