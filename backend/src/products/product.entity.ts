@@ -1,29 +1,31 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Category } from '../categories/category.entity';
 
-@Entity()
+// Додано ім'я таблиці явно, щоб уникнути помилки 500 (relation "product" does not exist)
+@Entity('products') 
 export class Product {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
+  // Використовуємо ?, бо поле nullable
   @Column({ nullable: true })
-  description: string;
+  description?: string; 
 
   @Column('decimal')
-  price: number;
+  price!: number;
 
   @Column({ default: 0 })
-  stock: number;
+  stock!: number;
 
   @Column({ default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @ManyToOne(() => Category, (category) => category.products, {
     nullable: true,
     onDelete: 'SET NULL',
   })
-  category: Category;
+  category?: Category; // Також краще ?, бо nullable: true
 }
