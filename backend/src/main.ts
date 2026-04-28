@@ -4,15 +4,19 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { TrimPipe } from './common/pipes/trim.pipe';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor'; // Додано імпорт
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter'; // Додано імпорт
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Підключення глобальних фільтрів (перехоплення помилок)
+  app.useGlobalFilters(new HttpExceptionFilter());
+
   // Підключення глобальних інтерцепторів
   app.useGlobalInterceptors(
     new LoggingInterceptor(),
-    new TransformInterceptor(), // Додано підключення
+    new TransformInterceptor(),
   );
 
   // Підключення глобальних пайпів
