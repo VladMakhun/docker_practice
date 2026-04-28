@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 
 @Catch()
@@ -15,41 +14,27 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
-    const traceId = randomUUID();
+    const request = ctx.getRequest<Request>();
+    
+    // Генеруємо випадковий traceId, щоб уникнути проблем з crypto
+    const traceId = Math.random().toString(36).substring(2, 10);
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
-    let details: any = undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const body = exception.getResponse();
-      if (typeof body === 'string') {
-        message = body;
-      } else if (typeof body === 'object') {
-        const obj = body as any;
-        message = obj.message || obj.error || message;
-        // Валідація від ValidationPipe повертає масив помилок
-        if (Array.isArray(obj.message)) {
-          details = obj.message;
-          message = 'Validation failed';
-        }
-      }
+      message = typeof body === 'string' ? body : (body as any).message || 'Error occurred';
     }
 
-    // Логуємо з traceId для дебагу
-    this.logger.error(
-      `[${traceId}] ${request.method} ${request.url} — ${status} — ${message}`,
-      exception instanceof Error ? exception.stack : undefined,
-    );
+    this.logger.error(`[${traceId}] ${request.method} ${request.url} — ${status} — ${message}`);
 
     response.status(status).json({
       error: {
         code: status,
         message,
-        ...(details && { details }),
         traceId,
       },
       timestamp: new Date().toISOString(),
