@@ -6,8 +6,12 @@ import { redisStore } from 'cache-manager-redis-yet';
 
 import { Category } from './categories/category.entity';
 import { Product } from './products/product.entity';
+import { User } from './users/user.entity';
+
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module'; // 1. Додай цей імпорт
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -23,10 +27,8 @@ import { AppService } from './app.service';
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
-
-      entities: [Category, Product],
-
-      synchronize: true, // для навчання ок
+      entities: [Category, Product, User],
+      synchronize: false, 
     }),
 
     CacheModule.registerAsync({
@@ -44,6 +46,8 @@ import { AppService } from './app.service';
 
     CategoriesModule,
     ProductsModule,
+    UsersModule,
+    AuthModule, // 2. Додай сюди
   ],
   controllers: [AppController],
   providers: [AppService],

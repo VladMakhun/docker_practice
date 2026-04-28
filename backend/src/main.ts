@@ -1,20 +1,28 @@
-// src/main.ts
+// backend/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { TrimPipe } from './common/pipes/trim.pipe'; // Імпорт твого нового пайпа
+import { TrimPipe } from './common/pipes/trim.pipe';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor'; // Додано імпорт
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Підключення глобальних інтерцепторів
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    new TransformInterceptor(), // Додано підключення
+  );
 
   // Підключення глобальних пайпів
   // TrimPipe має йти ПЕРЕД ValidationPipe
   app.useGlobalPipes(
     new TrimPipe(),
     new ValidationPipe({
-      whitelist: true,          // Видаляє властивості, які не описані в DTO
+      whitelist: true,           // Видаляє властивості, які не описані в DTO
       forbidNonWhitelisted: true, // Викидає помилку, якщо в запиті є зайві поля
-      transform: true,          // Автоматично перетворює типи даних
+      transform: true,           // Автоматично перетворює типи даних
     }),
   );
 
