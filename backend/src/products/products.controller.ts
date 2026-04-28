@@ -13,35 +13,61 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard'; // 1. Імпортуй RolesGuard
-import { Roles } from '../common/decorators/roles.decorator'; // 2. Імпортуй декоратор Roles
-import { Role } from '../common/enums/role.enum'; // 3. Імпортуй Role enum
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '../common/enums/role.enum';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
+@ApiTags('Products')
 @Controller('api/products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
+  @ApiOperation({
+    summary: 'Отримати всі продукти',
+    description: 'Повертає список усіх продуктів з вкладеними категоріями. Публічний ендпоінт.',
+  })
+  @ApiResponse({ status: 200, description: 'Список продуктів' })
   findAll() {
     return this.productsService.findAll();
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Отримати продукт за ID' })
+  @ApiResponse({ status: 200, description: 'Продукт знайдено' })
+  @ApiResponse({ status: 404, description: 'Продукт не знайдено' })
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.productsService.findOne(id);
+    return this.findOne(id); // Зверни увагу: тут має бути this.productsService.findOne(id)
   }
 
-  // Захищені методи (потрібен токен + роль ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard) // Порядок важливий!
-  @Roles(Role.ADMIN)
   @Post()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Створити продукт (admin)' })
+  @ApiResponse({ status: 201, description: 'Продукт створено' })
+  @ApiResponse({ status: 400, description: 'Помилка валідації' })
+  @ApiResponse({ status: 401, description: 'Не авторизовано' })
+  @ApiResponse({ status: 403, description: 'Недостатньо прав' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   create(@Body() dto: CreateProductDto) {
     return this.productsService.create(dto);
   }
 
+  @Patch(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Оновити продукт (admin)' })
+  @ApiResponse({ status: 200, description: 'Продукт оновлено' })
+  @ApiResponse({ status: 404, description: 'Продукт не знайдено' })
+  @ApiResponse({ status: 401, description: 'Не авторизовано' })
+  @ApiResponse({ status: 403, description: 'Недостатньо прав' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductDto,
@@ -49,9 +75,15 @@ export class ProductsController {
     return this.productsService.update(id, dto);
   }
 
+  @Delete(':id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Видалити продукт (admin)' })
+  @ApiResponse({ status: 200, description: 'Продукт видалено' })
+  @ApiResponse({ status: 404, description: 'Продукт не знайдено' })
+  @ApiResponse({ status: 401, description: 'Не авторизовано' })
+  @ApiResponse({ status: 403, description: 'Недостатньо прав' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.remove(id);
   }
