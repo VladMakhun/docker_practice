@@ -54,6 +54,7 @@ http://localhost:3000/api/docs
  
  ![swagger](swagger-screenshot.png)
 
+![swagger](image-3.png)
 
 ### Формат успішної відповіді
 
