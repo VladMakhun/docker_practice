@@ -2,9 +2,10 @@
 - Name: Vlad Makhun
 - Group: 232.1
 
-## Практичне заняття №5 — JWT Authentication + Guards + RBAC
+## Практичне заняття №6 — Interceptors + Exception Filters + Swagger
 
 ### Структура репозиторію
+
 ├── src/
 │   ├── auth/
 │   │   ├── dto/
@@ -17,6 +18,8 @@
 │   │   ├── user.entity.ts
 │   │   ├── users.module.ts
 │   │   └── users.service.ts
+│   ├── categories/
+│   ├── products/
 │   ├── common/
 │   │   ├── enums/
 │   │   │   └── role.enum.ts
@@ -26,14 +29,17 @@
 │   │   ├── decorators/
 │   │   │   ├── current-user.decorator.ts
 │   │   │   └── roles.decorator.ts
+│   │   ├── interceptors/
+│   │   │   ├── logging.interceptor.ts
+│   │   │   └── transform.interceptor.ts
+│   │   ├── filters/
+│   │   │   └── http-exception.filter.ts
 │   │   └── pipes/
 │   │       └── trim.pipe.ts
-│   ├── categories/
-│   ├── products/
 │   ├── migrations/
-│   ├── data-source.ts
 │   ├── main.ts
 │   └── app.module.ts
+├── swagger-screenshot.png
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
@@ -43,42 +49,46 @@
 cp .env.example .env
 docker compose up --build
 
-Method,URL,Auth,Role
-POST,/auth/register,-,-
-POST,/auth/login,-,-
-GET,/api/categories,-,-
-POST,/api/categories,JWT,admin
-GET,/api/products,-,-
-POST,/api/products,JWT,admin
-PATCH,/api/products/:id,JWT,admin
-DELETE,/api/products/:id,JWT,admin
+### Swagger UI
+http://localhost:3000/api/docs
+ 
+ ![swagger](swagger-screenshot.png)
 
-### Тест реєстрації
-```text
-<вивід curl POST /auth/register>
-```
- 
-### Тест логіну
-```text
-<"accessToken":  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoidmxhZEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc2NzgxOTI3LCJleHAiOjE3NzY3ODU1Mjd9.BJ0U_sVRyflE9-zEtBNyKlRjQExjCOGlJVMviD0xOEA">
-```
- 
-### Тест 401 — запит без токена
-```text
-<>
-```
- 
-### Тест 403 — запит з роллю user
-```text
-<try {
->>     $response = Invoke-RestMethod -Uri http://localhost:3000/api/products -Method Post -Headers $headers -ContentType "application/json" -Body '{"name": "Test Role Access", "price": 50}'
->>     Write-Host "Успіх! Статус: 201 Created"
->> } catch {
->>     Write-Host "Помилка! Статус: " $_.Exception.Response.StatusCode.value__
->> }
-Помилка! Статус:  403>
-```
- 
-### Тест успішного створення від admin
-```text
-<вив
+
+### Формат успішної відповіді
+
+{
+  "data": { "id": 1, "name": "iPhone 16", "price": 999.99 },
+  "statusCode": 200,
+  "timestamp": "2026-04-28T12:00:00.000Z"
+}
+
+### Формат помилки 
+
+{
+  "error": {
+    "code": 400,
+    "message": "Validation failed",
+    "details": ["name must be longer than 2 characters"],
+    "traceId": "a1b2c3d4-e5f6-..."
+  },
+  "timestamp": "2026-04-28T12:05:00.000Z"
+}
+
+### Приклад логів (LoggingInterceptor)
+
+[HTTP] POST /api/products — 201 — 45ms
+[HTTP] GET /api/products — 200 — 12ms
+
+### Тест помилки з traceId
+
+GET /api/products/999
+Response: 404 Not Found
+{
+  "statusCode": 404,
+  "message": "Product not found",
+  "traceId": "b8f9e2c1-3d4a-..."
+}
+
+
+
