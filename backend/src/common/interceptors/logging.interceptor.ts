@@ -7,25 +7,28 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { Request } from 'express';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger('HTTP');
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const req = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest<Request>();
+    
+    // Ігноруємо логи для Swagger
+    if (req.url.includes('api/docs')) {
+      return next.handle();
+    }
+
     const { method, url } = req;
-    const now = Date.now(); // Засікаємо час початку
+    const now = Date.now();
 
     return next.handle().pipe(
       tap(() => {
         const res = context.switchToHttp().getResponse();
-        const ms = Date.now() - now; // Рахуємо різницю після виконання
-        
-        // Виводимо гарний лог: Метод Шлях — Статус — Час
-        this.logger.log(
-          `${method} ${url} — ${res.statusCode} — ${ms}ms`,
-        );
+        const ms = Date.now() - now;
+        this.logger.log(`${method} ${url} — ${res.statusCode} — ${ms}ms`);
       }),
     );
   }
