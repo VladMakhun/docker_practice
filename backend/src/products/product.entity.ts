@@ -1,7 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Category } from '../categories/category.entity';
 
-// Додано ім'я таблиці явно, щоб уникнути помилки 500 (relation "product" does not exist)
 @Entity('products') 
 export class Product {
   @PrimaryGeneratedColumn()
@@ -10,7 +9,6 @@ export class Product {
   @Column()
   name!: string;
 
-  // Використовуємо ?, бо поле nullable
   @Column({ nullable: true })
   description?: string; 
 
@@ -23,9 +21,15 @@ export class Product {
   @Column({ default: true })
   isActive!: boolean;
 
+  // Зв'язок з категорією
   @ManyToOne(() => Category, (category) => category.products, {
     nullable: true,
     onDelete: 'SET NULL',
   })
-  category?: Category; // Також краще ?, бо nullable: true
+  @JoinColumn({ name: 'categoryId' }) // Явно вказуємо назву колонки в базі
+  category?: Category;
+
+  // Додаємо саму колонку для ключів (це допоможе уникнути помилки databaseName)
+  @Column({ nullable: true })
+  categoryId?: number;
 }

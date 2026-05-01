@@ -2,44 +2,18 @@
 - Name: Vlad Makhun
 - Group: 232.1
 
-## Практичне заняття №6 — Interceptors + Exception Filters + Swagger
+## Практичне заняття №7 — Redis + Pagination + Filtering
 
 ### Структура репозиторію
-
 ├── src/
-│   ├── auth/
-│   │   ├── dto/
-│   │   │   ├── register.dto.ts
-│   │   │   └── login.dto.ts
-│   │   ├── auth.module.ts
-│   │   ├── auth.service.ts
-│   │   └── auth.controller.ts
-│   ├── users/
-│   │   ├── user.entity.ts
-│   │   ├── users.module.ts
-│   │   └── users.service.ts
-│   ├── categories/
 │   ├── products/
+│   │   ├── dto/
+│   │   │   └── product-query.dto.ts # Валідація параметрів пошуку
+│   ├── seeds/
+│   │   └── seed.ts                  # Скрипт заповнення бази даними
 │   ├── common/
-│   │   ├── enums/
-│   │   │   └── role.enum.ts
-│   │   ├── guards/
-│   │   │   ├── jwt-auth.guard.ts
-│   │   │   └── roles.guard.ts
-│   │   ├── decorators/
-│   │   │   ├── current-user.decorator.ts
-│   │   │   └── roles.decorator.ts
-│   │   ├── interceptors/
-│   │   │   ├── logging.interceptor.ts
-│   │   │   └── transform.interceptor.ts
-│   │   ├── filters/
-│   │   │   └── http-exception.filter.ts
-│   │   └── pipes/
-│   │       └── trim.pipe.ts
-│   ├── migrations/
-│   ├── main.ts
-│   └── app.module.ts
-├── swagger-screenshot.png
+│   │   ├── interceptors/            # Трансформація та логування відповідей
+│   │   └── filters/                 # Обробка помилок та traceId
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
@@ -48,48 +22,77 @@
 ```bash
 cp .env.example .env
 docker compose up --build
+docker compose run --rm app npm run seed
 
-### Swagger UI
-http://localhost:3000/api/docs
- 
- ![swagger](swagger-screenshot.png)
+API: GET /api/products
+Ендпоінт підтримує складну фільтрацію, сортування та пагінацію. Всі параметри валідуються через class-validator.
 
-![swagger](image-3.png)
+Параметр,Тип,Default,Опис
+page,number,1,Номер сторінки
+pageSize,number,10,Елементів на сторінку (max 100)
+sort,string,createdAt,Поле сортування
+order,asc/desc,desc,Напрямок (ASC або DESC)
+categoryId,number,-,Фільтр за категорією
+minPrice,number,-,Мінімальна ціна
+maxPrice,number,-,Максимальна ціна
+search,string,-,Пошук за назвою (ILIKE)
 
-### Формат успішної відповіді
+Swagger UI
+Доступний за адресою: http://localhost:3000/api/docs
+
+Тест пагінації (5 елементів на сторінці)
+Запит: GET /api/products?page=1&pageSize=5
 
 {
-  "data": { "id": 1, "name": "iPhone 16", "price": 999.99 },
+  "data": {
+    "items": [
+      { "id": 33, "name": "Hoodie NestJS v3", "price": "75", "categoryId": 3 },
+      { "id": 32, "name": "T-Shirt Dev v3", "price": "45", "categoryId": 3 },
+      { "id": 31, "name": "Laptop Sleeve v3", "price": "69", "categoryId": 2 },
+      { "id": 30, "name": "MagSafe Charger v3", "price": "59", "categoryId": 2 },
+      { "id": 29, "name": "USB-C Cable v3", "price": "39", "categoryId": 2 }
+    ],
+    "meta": {
+      "total": 33,
+      "page": 1,
+      "pageSize": 5,
+      "totalPages": 7
+    }
+  },
   "statusCode": 200,
-  "timestamp": "2026-04-28T12:00:00.000Z"
+  "timestamp": "2026-05-01T12:13:10.091Z"
 }
 
-### Формат помилки 
+Тест фільтрації (Категорія + Ціна)
+Запит: GET /api/products?categoryId=1&minPrice=500
+Результат: Повертає лише товари з категорії Electronics (ID: 1), ціна яких вища за 500 (наприклад, iPhone, MacBook).
+
+Тест пошуку
+Запит: GET /api/products?search=mac
+Результат: Повертає всі товари, що містять "mac" у назві (наприклад, MacBook Pro, MacBook Pro v2).
+
+Тест кешування (Redis)
+Перевірка наявності ключів у Redis після запиту:
+
+docker exec -it redis_cache redis-cli KEYS "products:*"
+# Вивід:
+1) "products:{\"page\":1,\"pageSize\":5}"
+
+Тест інвалідації кешу
+До створення продукту: KEYS "products:*" повертає список активних кешів.
+
+Дія: Виконуємо POST /api/products (створення нового товару).
+
+Після створення: KEYS "products:*" повертає (empty array). Кеш успішно очищено для забезпечення актуальності даних.
+
+Формат помилки (Validation)
+Якщо pageSize перевищує 100:
 
 {
   "error": {
     "code": 400,
     "message": "Validation failed",
-    "details": ["name must be longer than 2 characters"],
-    "traceId": "a1b2c3d4-e5f6-..."
+    "details": ["pageSize must not be greater than 100"]
   },
-  "timestamp": "2026-04-28T12:05:00.000Z"
+  "timestamp": "2026-05-01T12:20:00.000Z"
 }
-
-### Приклад логів (LoggingInterceptor)
-
-[HTTP] POST /api/products — 201 — 45ms
-[HTTP] GET /api/products — 200 — 12ms
-
-### Тест помилки з traceId
-
-GET /api/products/999
-Response: 404 Not Found
-{
-  "statusCode": 404,
-  "message": "Product not found",
-  "traceId": "b8f9e2c1-3d4a-..."
-}
-
-
-

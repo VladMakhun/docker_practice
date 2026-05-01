@@ -11,7 +11,7 @@ import { User } from './users/user.entity';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module'; // 1. Додай цей імпорт
+import { AuthModule } from './auth/auth.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -36,18 +36,19 @@ import { AppService } from './app.service';
       useFactory: async () => ({
         store: await redisStore({
           socket: {
-            host: process.env.REDIS_HOST || 'redis',
+            // Використовуємо 'redis_cache', бо саме так називається твій контейнер у Docker
+            host: process.env.REDIS_HOST || 'redis_cache', 
             port: parseInt(process.env.REDIS_PORT || '6379', 10),
           },
         }),
-        ttl: 60 * 1000,
+        ttl: 60000, // 60 секунд у мілісекундах
       }),
     }),
 
     CategoriesModule,
     ProductsModule,
     UsersModule,
-    AuthModule, // 2. Додай сюди
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
