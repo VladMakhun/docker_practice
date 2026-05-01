@@ -8,10 +8,12 @@ import {
   Body,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductQueryDto } from './dto/product-query.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -31,11 +33,11 @@ export class ProductsController {
   @Get()
   @ApiOperation({
     summary: 'Отримати всі продукти',
-    description: 'Повертає список усіх продуктів з вкладеними категоріями. Публічний ендпоінт.',
+    description: 'Повертає пагінований список продуктів з фільтрацією та сортуванням. Публічний ендпоінт.',
   })
-  @ApiResponse({ status: 200, description: 'Список продуктів' })
-  findAll() {
-    return this.productsService.findAll();
+  @ApiResponse({ status: 200, description: 'Список продуктів з мета-даними' })
+  findAll(@Query() query: ProductQueryDto) {
+    return this.productsService.findAll(query);
   }
 
   @Get(':id')
@@ -43,7 +45,7 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Продукт знайдено' })
   @ApiResponse({ status: 404, description: 'Продукт не знайдено' })
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.findOne(id); // Зверни увагу: тут має бути this.productsService.findOne(id)
+    return this.productsService.findOne(id);
   }
 
   @Post()
