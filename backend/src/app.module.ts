@@ -7,11 +7,14 @@ import { redisStore } from 'cache-manager-redis-yet';
 import { Category } from './categories/category.entity';
 import { Product } from './products/product.entity';
 import { User } from './users/user.entity';
+import { Order } from './orders/entities/order.entity';
+import { OrderItem } from './orders/entities/order-item.entity';
 
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { OrdersModule } from './orders/orders.module'; // <-- Додано імпорт модуля замовлень
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -27,7 +30,7 @@ import { AppService } from './app.service';
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
-      entities: [Category, Product, User],
+      entities: [Category, Product, User, Order, OrderItem],
       synchronize: false, 
     }),
 
@@ -49,6 +52,7 @@ import { AppService } from './app.service';
     ProductsModule,
     UsersModule,
     AuthModule,
+    OrdersModule, // <-- Додано модуль до списку імпортів додатка
   ],
   controllers: [AppController],
   providers: [AppService],
