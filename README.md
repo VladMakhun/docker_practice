@@ -1,98 +1,113 @@
 ## Student
 - Name: Vlad Makhun
-- Group: 232.1
+- Group: <232.1>
 
-## Практичне заняття №7 — Redis + Pagination + Filtering
+## MiniShop API — Фінальний проєкт
 
-### Структура репозиторію
-├── src/
-│   ├── products/
-│   │   ├── dto/
-│   │   │   └── product-query.dto.ts # Валідація параметрів пошуку
-│   ├── seeds/
-│   │   └── seed.ts                  # Скрипт заповнення бази даними
-│   ├── common/
-│   │   ├── interceptors/            # Трансформація та логування відповідей
-│   │   └── filters/                 # Обробка помилок та traceId
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
+REST API інтернет-магазину на NestJS + PostgreSQL + Redis.
 
-### Запуск проекту
+### Технології
+- NestJS + TypeScript
+- PostgreSQL + TypeORM (міграції, QueryBuilder)
+- Redis (кешування з інвалідацією)
+- JWT автентифікація + RBAC авторизація
+- class-validator + class-transformer
+- Swagger / OpenAPI
+
+### Запуск
 ```bash
 cp .env.example .env
 docker compose up --build
 docker compose run --rm app npm run seed
 
-API: GET /api/products
-Ендпоінт підтримує складну фільтрацію, сортування та пагінацію. Всі параметри валідуються через class-validator.
+### Swagger UI
+http://localhost:3000/api/docs
 
-Параметр,Тип,Default,Опис
-page,number,1,Номер сторінки
-pageSize,number,10,Елементів на сторінку (max 100)
-sort,string,createdAt,Поле сортування
-order,asc/desc,desc,Напрямок (ASC або DESC)
-categoryId,number,-,Фільтр за категорією
-minPrice,number,-,Мінімальна ціна
-maxPrice,number,-,Максимальна ціна
-search,string,-,Пошук за назвою (ILIKE)
+API Endpoints 
 
-Swagger UI
-Доступний за адресою: http://localhost:3000/api/docs
+Method,URL,Auth,Опис
+POST,/auth/register,-,Реєстрація
+POST,/auth/login,-,Логін → JWT
 
-Тест пагінації (5 елементів на сторінці)
-Запит: GET /api/products?page=1&pageSize=5
+Categories
+Method,URL,Auth,Опис
+GET,/api/categories,-,Список
+GET,/api/categories/:id,-,Одна
+POST,/api/categories,admin,Створити
+PATCH,/api/categories/:id,admin,Оновити
+DELETE,/api/categories/:id,admin,Видалити
+
+
+Products
+Method,URL,Auth,Опис
+GET,/api/products,-,Список + pagination + filter
+GET,/api/products/:id,-,Один
+POST,/api/products,admin,Створити
+PATCH,/api/products/:id,admin,Оновити
+DELETE,/api/products/:id,admin,Видалити
+
+Orders
+Method,URL,Auth,Опис
+POST,/api/orders,user,Створити замовлення
+GET,/api/orders,user,Мої / Всі (admin)
+GET,/api/orders/:id,user,Одне (ownership)
+PATCH,/api/orders/:id/status,admin,Змінити статус
+DELETE,/api/orders/:id,admin,Видалити
+
+### Тест створення замовлення
 
 {
-  "data": {
-    "items": [
-      { "id": 33, "name": "Hoodie NestJS v3", "price": "75", "categoryId": 3 },
-      { "id": 32, "name": "T-Shirt Dev v3", "price": "45", "categoryId": 3 },
-      { "id": 31, "name": "Laptop Sleeve v3", "price": "69", "categoryId": 2 },
-      { "id": 30, "name": "MagSafe Charger v3", "price": "59", "categoryId": 2 },
-      { "id": 29, "name": "USB-C Cable v3", "price": "39", "categoryId": 2 }
-    ],
-    "meta": {
-      "total": 33,
-      "page": 1,
-      "pageSize": 5,
-      "totalPages": 7
+  "id": 1,
+  "totalPrice": 1250,
+  "status": "pending",
+  "user": {
+    "id": 2,
+    "email": "alice@test.com",
+    "name": "Alice"
+  },
+  "items": [
+    {
+      "id": 1,
+      "quantity": 2,
+      "price": 500
+    },
+    {
+      "id": 2,
+      "quantity": 1,
+      "price": 250
     }
-  },
-  "statusCode": 200,
-  "timestamp": "2026-05-01T12:13:10.091Z"
+  ],
+  "createdAt": "2026-05-18T14:30:00.000Z"
 }
 
-Тест фільтрації (Категорія + Ціна)
-Запит: GET /api/products?categoryId=1&minPrice=500
-Результат: Повертає лише товари з категорії Electronics (ID: 1), ціна яких вища за 500 (наприклад, iPhone, MacBook).
-
-Тест пошуку
-Запит: GET /api/products?search=mac
-Результат: Повертає всі товари, що містять "mac" у назві (наприклад, MacBook Pro, MacBook Pro v2).
-
-Тест кешування (Redis)
-Перевірка наявності ключів у Redis після запиту:
-
-docker exec -it redis_cache redis-cli KEYS "products:*"
-# Вивід:
-1) "products:{\"page\":1,\"pageSize\":5}"
-
-Тест інвалідації кешу
-До створення продукту: KEYS "products:*" повертає список активних кешів.
-
-Дія: Виконуємо POST /api/products (створення нового товару).
-
-Після створення: KEYS "products:*" повертає (empty array). Кеш успішно очищено для забезпечення актуальності даних.
-
-Формат помилки (Validation)
-Якщо pageSize перевищує 100:
+### Тест ownership (403)
 
 {
-  "error": {
-    "code": 400,
-    "message": "Validation failed",
-    "details": ["pageSize must not be greater than 100"]
-  },
-  "timestamp": "2026-05-01T12:20:00.000Z"
+  "statusCode": 403,
+  "message": "You can only view your own orders",
+  "error": "Forbidden"
 }
+
+### Тест зміни статусу
+
+{
+  "id": 1,
+  "totalPrice": 1250,
+  "status": "confirmed",
+  "createdAt": "2026-05-18T14:30:00.000Z"
+}
+
+### Тест insufficient stock
+
+{
+  "statusCode": 400,
+  "message": "Недостатньо товару \"Смартфон\" на складі: доступно 5, запитувано 99999",
+  "error": "Bad Request"
+}
+
+
+
+
+
+
+
